@@ -7,6 +7,7 @@ using System.Configuration;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security;
@@ -20,7 +21,12 @@ namespace TestRunner
     {
         TreeNode currentTreeNode;
         Dictionary<TreeNode, MethodInfo> methodTree = new Dictionary<TreeNode, MethodInfo>();
-       
+        string testResultFilePath = Environment.CurrentDirectory + "\\TestResult.txt";
+        MethodInfo testFixtureSetup = null;
+        MethodInfo testFixtureTearDown = null;
+        MethodInfo testMethodSetup = null;
+        MethodInfo testMethodTearDown = null;
+
         public Form1()
         {
             InitializeComponent();
@@ -83,6 +89,26 @@ namespace TestRunner
                         IEnumerable<CustomAttributeData> customAttributes = item.CustomAttributes;
                         foreach (var attribute in customAttributes)
                         {
+                            if(attribute.AttributeType.Name== "TestFixtureSetUpAttribute")
+                            {
+                                testFixtureSetup = item;
+                                break;
+                            }
+                            if(attribute.AttributeType.Name== "TestFixtureTearDownAttribute")
+                            {
+                                testFixtureTearDown = item;
+                                break;
+                            }
+                            if(attribute.AttributeType.Name== "SetUpAttribute")
+                            {
+                                testMethodSetup = item;
+                                break;
+                            }
+                            if(attribute.AttributeType.Name== "TearDownAttribute")
+                            {
+                                testMethodTearDown = item;
+                                break;
+                            }
                             if(attribute.AttributeType.Name =="TestAttribute")
                             {
                                 methodsList.Add(item);
@@ -121,29 +147,81 @@ namespace TestRunner
             {
                 if (methodInfo != null)
                 {
-                    Type type = methodInfo.ReflectedType;
-                    ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
-                    object obj = constructor.Invoke(new object[] { });
-
-                    object methodBase = methodInfo.Invoke(obj, new object[] { });
-                    string output = Process.GetCurrentProcess().StandardOutput.ReadToEnd();
+                    RunMethod(methodInfo);
 
                 }
             }
             catch (AssertionException ae)
             {
-                Console.WriteLine(ae.ToString());
+                txtBox_OutPut.Text = string.Empty;
+                txtBox_OutPut.Text=ae.ToString();
             }
             catch (Exception ex)
             {
+                txtBox_OutPut.Text = string.Empty;
                 Exception innerException = ex.InnerException;
-
+                string message = string.Empty;
                 if (innerException != null)
                 {
-
-                    Console.WriteLine(ex.ToString());
+                    message = innerException.ToString();
+                    
                 }
+                message = message +Environment.NewLine+ "Test Failed";
+                txtBox_OutPut.Text = message;
             }
+        }
+
+        private void RunMethod(MethodInfo methodInfo)
+        {
+            Type type = methodInfo.ReflectedType;
+            
+            ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
+            
+            object obj = constructor.Invoke(new object[] { });
+            
+            Stopwatch stopwatch = new Stopwatch();
+            
+            stopwatch.Start();
+            
+            if (testFixtureSetup != null)
+            {
+                testFixtureSetup.Invoke(obj, new object[] { });
+            }
+            if (testMethodSetup != null)
+            {
+                testMethodSetup.Invoke(obj, new object[] { });
+            }
+
+            methodInfo.Invoke(obj, new object[] { });
+            
+            if (testMethodTearDown != null)
+            {
+                testMethodTearDown.Invoke(obj, new object[] { });
+            }
+            if (testFixtureTearDown != null)
+            {
+                testFixtureTearDown.Invoke(obj, new object[] { });
+            }
+            
+            txtBox_OutPut.Text = string.Empty;
+            stopwatch.Stop();
+            
+            long timeTakentoRunMethod = stopwatch.ElapsedMilliseconds;
+            
+            string message = string.Format("{0} is Pass in {1} milliseconds ", methodInfo.Name, timeTakentoRunMethod);
+
+            string[] output = File.ReadAllLines(testResultFilePath);
+            
+            StringBuilder stringBuilder = new StringBuilder();
+            
+            stringBuilder.AppendLine(message);
+            
+            foreach (var item in output)
+            {
+                stringBuilder.AppendLine(item);
+            }
+            
+            txtBox_OutPut.Text = stringBuilder.ToString();
         }
     }
 }
