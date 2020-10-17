@@ -1,0 +1,3 @@
+device refresh time : 25.535, user refresh time: 0.105, total refresh time: 25.64
+
+average device refresh time : 0.4255833333333333333333333333,user refresh time :0.00175, total refresh time : 0.4273333333333333333333333333
