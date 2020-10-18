@@ -1,6 +1,6 @@
 ﻿namespace TestRunner
 {
-    partial class Form1
+    partial class TestRunnerForm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TestRunnerForm));
             this.treeView_Tests = new System.Windows.Forms.TreeView();
             this.btn_Run = new System.Windows.Forms.Button();
             this.txtBox_OutPut = new System.Windows.Forms.TextBox();
@@ -36,6 +36,8 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.FileUploadDailog = new System.Windows.Forms.OpenFileDialog();
             this.btnUploadTestProject = new System.Windows.Forms.Button();
+           // CustomProgressBar customProgressBar = new CustomProgressBar();
+            this.progressBarTests = new System.Windows.Forms.ProgressBar();//
             this.SuspendLayout();
             // 
             // treeView_Tests
@@ -94,11 +96,22 @@
             this.btnUploadTestProject.UseVisualStyleBackColor = true;
             this.btnUploadTestProject.Click += new System.EventHandler(this.btnUploadTestProject_Click);
             // 
+            // progressBarTests
+            // 
+
+            this.progressBarTests.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(255)))), ((int)(((byte)(192)))));
+            this.progressBarTests.Location = new System.Drawing.Point(500, 657);
+            this.progressBarTests.Name = "progressBarTests";
+            this.progressBarTests.Size = new System.Drawing.Size(1277, 23);
+            this.progressBarTests.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
+            this.progressBarTests.TabIndex = 8;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1806, 795);
+            this.Controls.Add(this.progressBarTests);
             this.Controls.Add(this.btnUploadTestProject);
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.label1);
@@ -123,6 +136,8 @@
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.OpenFileDialog FileUploadDailog;
         private System.Windows.Forms.Button btnUploadTestProject;
+        private System.Windows.Forms.ProgressBar progressBarTests;
+        private CustomProgressBar progressBarTests;
     }
 }
 
