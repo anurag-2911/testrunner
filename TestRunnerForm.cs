@@ -46,6 +46,59 @@ namespace TestRunner
         private void treeView_Tests_AfterSelect(object sender, TreeViewEventArgs treeViewEventArgs)
         {
             currentTreeNode = treeViewEventArgs.Node;
+            string parameters=CheckParameters();
+            if(string.IsNullOrEmpty(parameters))
+            {
+                textBoxParameters.Visible = false;
+                lblParameters.Visible = false;
+            }
+        }
+
+        private string CheckParameters()
+        {
+            MethodInfo methodInfo;
+            string message = string.Empty;
+            methodTree.TryGetValue(currentTreeNode, out methodInfo);
+            if (methodInfo != null)
+            {
+                try
+                {
+                    ParameterInfo[] parameters = null;
+                    message= GetParammeters(methodInfo, ref parameters);
+                    if (parameters.Length > 0)
+                    {
+                        textBoxParameters.Visible = true;
+                        lblParameters.Visible = true;
+                        lblParameters.Width = parameters.Length + 10;
+                        lblParameters.Text = message;
+                    }
+                }
+                catch (Exception exception)
+                {
+
+                }
+
+            }
+            return message;
+        }
+
+        private static string GetParammeters(MethodInfo methodInfo,ref ParameterInfo[] parameters)
+        {
+            StringBuilder parameterMessage = new StringBuilder();
+            parameters = methodInfo.GetParameters();
+            if (parameters.Length > 0)
+            {
+                
+                parameterMessage.Append("Enter parameter(s) ");
+                foreach (var item in parameters)
+                {
+                    parameterMessage.Append(item.Name);
+                    parameterMessage.Append(",");
+                }
+                parameterMessage.Remove(parameterMessage.Length-1, 1);
+                
+            }
+            return parameterMessage.ToString();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -144,6 +197,13 @@ namespace TestRunner
 
         private void btn_Run_Click(object sender, EventArgs e)
         {
+            string message = CheckParameters();
+            if(!string.IsNullOrEmpty(message) && string.IsNullOrEmpty(textBoxParameters.Text))
+            {
+                MessageBox.Show(message);
+                return;
+            }
+            
             RunTest();
         }
 
@@ -168,6 +228,10 @@ namespace TestRunner
                     progressBarTests.Value = 0;
 
                     RunMethod(methodInfo);
+                    this.progressBarTests.ForeColor = Color.Green;
+                    this.progressBarTests.BackColor = Color.Green;
+                    //currentTreeNode.BackColor = Color.Green;
+                    currentTreeNode.ForeColor = Color.Green;
 
                 }
             }
@@ -179,10 +243,14 @@ namespace TestRunner
             catch (Exception ex)
             {
                 txtBox_OutPut.Text = string.Empty;
-                // 1040 - PBM_SETSTATE
-                // 2 - red (error), 3 - yellow (paused), 1 - green (in progress) 
-                SendMessage(progressBarTests.Handle, 1040, 2, 0);
-                
+                //// 1040 - PBM_SETSTATE
+                //// 2 - red (error), 3 - yellow (paused), 1 - green (in progress) 
+                //SendMessage(progressBarTests.Handle, 1040, 2, 0);
+                progressBarTests.ForeColor = Color.Red;
+                progressBarTests.BackColor = Color.Red;
+                //currentTreeNode.BackColor = Color.Red;
+                currentTreeNode.ForeColor = Color.Red;
+
                 Exception innerException = ex.InnerException;
                 string message = string.Empty;
                 if (innerException != null)
@@ -190,8 +258,10 @@ namespace TestRunner
                     message = innerException.ToString();
                     
                 }
-                message = message +Environment.NewLine+ "Test Failed";
+                message = message +Environment.NewLine+ methodInfo.Name + " Test Failed";
                 txtBox_OutPut.Text = message;
+                textBoxParameters.Visible = false;
+                lblParameters.Visible = false;
             }
         }
 
@@ -215,8 +285,27 @@ namespace TestRunner
             {
                 testMethodSetup.Invoke(obj, new object[] { });
             }
-
-            methodInfo.Invoke(obj, new object[] { });
+            ParameterInfo[] parameterInfo = null;
+            GetParammeters(methodInfo, ref parameterInfo);
+            string parameters = string.Empty;
+            if(parameterInfo != null && parameterInfo.Length>0)
+            {
+                parameters = textBoxParameters.Text;
+            }
+            if (string.IsNullOrEmpty(parameters))
+            {
+                methodInfo.Invoke(obj, new object[] { });
+            }
+            else
+            {
+                object[] args = parameters.Split(',');
+                int[] counters = new int[args.Length];
+                for (int i = 0; i < args.Length; i++)
+                {
+                    counters[i] = Convert.ToInt32(args[i]);
+                }
+                methodInfo.Invoke(obj, new object[] {counters[0] });
+            }
             
             
             
@@ -248,6 +337,8 @@ namespace TestRunner
             {
                 testFixtureTearDown.Invoke(obj, new object[] { });
             }
+            textBoxParameters.Visible = false;
+            lblParameters.Visible = false;
 
         }
     }
