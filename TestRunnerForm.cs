@@ -58,6 +58,7 @@ namespace TestRunner
         {
             MethodInfo methodInfo;
             string message = string.Empty;
+           
             methodTree.TryGetValue(currentTreeNode, out methodInfo);
             if (methodInfo != null)
             {
@@ -197,6 +198,11 @@ namespace TestRunner
 
         private void btn_Run_Click(object sender, EventArgs e)
         {
+            if(currentTreeNode==null)
+            {
+                MessageBox.Show("Test dll is not attached!!");
+                return;
+            }
             string message = CheckParameters();
             if(!string.IsNullOrEmpty(message) && string.IsNullOrEmpty(textBoxParameters.Text))
             {
@@ -235,100 +241,65 @@ namespace TestRunner
 
                 }
             }
-            catch (AssertionException ae)
+            catch (AssertionException ex)
             {
-                txtBox_OutPut.Text = string.Empty;
-                txtBox_OutPut.Text=ae.ToString();
+                HandleFailure(methodInfo, ex);
             }
             catch (Exception ex)
             {
-                txtBox_OutPut.Text = string.Empty;
-                //// 1040 - PBM_SETSTATE
-                //// 2 - red (error), 3 - yellow (paused), 1 - green (in progress) 
-                //SendMessage(progressBarTests.Handle, 1040, 2, 0);
-                progressBarTests.ForeColor = Color.Red;
-                progressBarTests.BackColor = Color.Red;
-                //currentTreeNode.BackColor = Color.Red;
-                currentTreeNode.ForeColor = Color.Red;
-
-                Exception innerException = ex.InnerException;
-                string message = string.Empty;
-                if (innerException != null)
-                {
-                    message = innerException.ToString();
-                    
-                }
-                message = message +Environment.NewLine+ methodInfo.Name + " Test Failed";
-                txtBox_OutPut.Text = message;
-                textBoxParameters.Visible = false;
-                lblParameters.Visible = false;
+                HandleFailure(methodInfo, ex);
             }
+        }
+
+        private void HandleFailure(MethodInfo methodInfo, Exception ex)
+        {
+            txtBox_OutPut.Text = string.Empty;
+            //// 1040 - PBM_SETSTATE
+            //// 2 - red (error), 3 - yellow (paused), 1 - green (in progress) 
+            //SendMessage(progressBarTests.Handle, 1040, 2, 0);
+            progressBarTests.ForeColor = Color.Red;
+            progressBarTests.BackColor = Color.Red;
+            //currentTreeNode.BackColor = Color.Red;
+            currentTreeNode.ForeColor = Color.Red;
+
+            Exception innerException = ex.InnerException;
+            string message = string.Empty;
+            if (innerException != null)
+            {
+                message = innerException.ToString();
+
+            }
+            message = message + Environment.NewLine + methodInfo.Name + " Test Failed";
+            txtBox_OutPut.Text = message;
+            textBoxParameters.Visible = false;
+            lblParameters.Visible = false;
         }
 
         private void RunMethod(MethodInfo methodInfo)
         {
             Type type = methodInfo.ReflectedType;
-            
-            ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
-            
-            object obj = constructor.Invoke(new object[] { });
-           
-            Stopwatch stopwatch = new Stopwatch();
-            
-            stopwatch.Start();
-            
-            if (testFixtureSetup != null)
-            {
-                testFixtureSetup.Invoke(obj, new object[] { });
-            }
-            if (testMethodSetup != null)
-            {
-                testMethodSetup.Invoke(obj, new object[] { });
-            }
-            ParameterInfo[] parameterInfo = null;
-            GetParammeters(methodInfo, ref parameterInfo);
-            string parameters = string.Empty;
-            if(parameterInfo != null && parameterInfo.Length>0)
-            {
-                parameters = textBoxParameters.Text;
-            }
-            if (string.IsNullOrEmpty(parameters))
-            {
-                methodInfo.Invoke(obj, new object[] { });
-            }
-            else
-            {
-                object[] args = parameters.Split(',');
-                int[] counters = new int[args.Length];
-                for (int i = 0; i < args.Length; i++)
-                {
-                    counters[i] = Convert.ToInt32(args[i]);
-                }
-                methodInfo.Invoke(obj, new object[] {counters[0] });
-            }
-            
-            
-            
-            txtBox_OutPut.Text = string.Empty;
-            stopwatch.Stop();
-            progressBarTests.Value = 100;
-            long timeTakentoRunMethod = stopwatch.ElapsedMilliseconds;
-            
-            string message = string.Format("{0} is Pass in {1} milliseconds ", methodInfo.Name, timeTakentoRunMethod);
 
-            string[] output = File.ReadAllLines(testResultFilePath);
-            
-            StringBuilder stringBuilder = new StringBuilder();
-            
-            stringBuilder.AppendLine(message);
-            
-            foreach (var item in output)
-            {
-                stringBuilder.AppendLine(item);
-            }
-            
-            txtBox_OutPut.Text = stringBuilder.ToString();
-            
+            ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
+
+            object obj = constructor.Invoke(new object[] { });
+
+            Stopwatch stopwatch = new Stopwatch();
+
+            stopwatch.Start();
+            Setup(obj);
+
+            RunMethod(methodInfo, obj, stopwatch);
+
+            TearDown(obj);
+
+            textBoxParameters.Visible = false;
+
+            lblParameters.Visible = false;
+
+        }
+
+        private void TearDown(object obj)
+        {
             if (testMethodTearDown != null)
             {
                 testMethodTearDown.Invoke(obj, new object[] { });
@@ -337,9 +308,71 @@ namespace TestRunner
             {
                 testFixtureTearDown.Invoke(obj, new object[] { });
             }
-            textBoxParameters.Visible = false;
-            lblParameters.Visible = false;
+        }
 
+        private void Setup(object obj)
+        {
+            if (testFixtureSetup != null)
+            {
+                testFixtureSetup.Invoke(obj, new object[] { });
+            }
+            if (testMethodSetup != null)
+            {
+                testMethodSetup.Invoke(obj, new object[] { });
+            }
+        }
+
+        private void RunMethod(MethodInfo methodInfo, object obj, Stopwatch stopwatch)
+        {
+            ParameterInfo[] parameterInfo = null;
+
+            GetParammeters(methodInfo, ref parameterInfo);
+
+            string parameters = string.Empty;
+
+            if (parameterInfo != null && parameterInfo.Length > 0)
+            {
+                parameters = textBoxParameters.Text;
+            }
+
+            if (string.IsNullOrEmpty(parameters))
+            {
+                methodInfo.Invoke(obj, new object[] { });
+            }
+
+            else
+            {
+                //Todo: make it generic
+                object[] args = parameters.Split(',');
+                int[] counters = new int[args.Length];
+                for (int i = 0; i < args.Length; i++)
+                {
+                    counters[i] = Convert.ToInt32(args[i]);
+                }
+                methodInfo.Invoke(obj, new object[] { counters[0] });
+            }
+
+
+
+            txtBox_OutPut.Text = string.Empty;
+            stopwatch.Stop();
+            progressBarTests.Value = 100;
+            long timeTakentoRunMethod = stopwatch.ElapsedMilliseconds;
+
+            string message = string.Format("{0} is Pass in {1} milliseconds ", methodInfo.Name, timeTakentoRunMethod);
+
+            string[] output = File.ReadAllLines(testResultFilePath);
+
+            StringBuilder stringBuilder = new StringBuilder();
+
+            stringBuilder.AppendLine(message);
+
+            foreach (var item in output)
+            {
+                stringBuilder.AppendLine(item);
+            }
+
+            txtBox_OutPut.Text = stringBuilder.ToString();
         }
     }
 }
