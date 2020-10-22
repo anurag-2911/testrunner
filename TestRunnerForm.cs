@@ -37,6 +37,7 @@ namespace TestRunner
         MethodInfo testFixtureTearDown = null;
         MethodInfo testMethodSetup = null;
         MethodInfo testMethodTearDown = null;
+        Dictionary<string,Type> testClasses = new Dictionary<string, Type>();
 
         public TestRunnerForm()
         {
@@ -46,6 +47,7 @@ namespace TestRunner
         private void treeView_Tests_AfterSelect(object sender, TreeViewEventArgs treeViewEventArgs)
         {
             currentTreeNode = treeViewEventArgs.Node;
+            this.ResetResultWindow();
             string parameters=CheckParameters();
             if(string.IsNullOrEmpty(parameters))
             {
@@ -74,7 +76,7 @@ namespace TestRunner
                         lblParameters.Text = message;
                     }
                 }
-                catch (Exception exception)
+                catch (Exception)
                 {
 
                 }
@@ -109,16 +111,19 @@ namespace TestRunner
 
         private void PopulateTestTree(List<MethodInfo> testMethods)
         {
-
             try
             {
-                
+                treeView_Tests.Nodes.Clear();
+                methodTree.Clear();
+
                 foreach (var item in testMethods)
                 {
                     TreeNode treeNode = new TreeNode(item.Name);
                     methodTree.Add(treeNode, item);
                 }
+
                 treeView_Tests.Nodes.AddRange(methodTree.Keys.ToArray());
+
             }
             catch (Exception exception)
             {
@@ -128,71 +133,101 @@ namespace TestRunner
             
         }
 
-        private void btnUploadTestProject_Click(object sender, EventArgs e)
+        private void AttachDll()
         {
-            string[] testclasses = ConfigurationManager.AppSettings.GetValues("TestClasses");
-            List<MethodInfo> methodsList = new List<MethodInfo>();
+            
+
             if (FileUploadDailog.ShowDialog() == DialogResult.OK)
             {
                 try
                 {
                     var filePath = FileUploadDailog.FileName;
+
                     Assembly testDll = Assembly.LoadFrom(filePath);
-                    List<Type> classes = new List<Type>();
-                    MethodInfo[] methods=null;
-                    foreach (var item in testclasses)
-                    {
-                        classes.Add(testDll.GetType(item));
-                    }
-                    foreach (var item in classes)
-                    {
-                       methods = item.GetMethods();
-                        
-                    }
-                    foreach (var item in methods)
-                    {
-                        IEnumerable<CustomAttributeData> customAttributes = item.CustomAttributes;
-                        foreach (var attribute in customAttributes)
-                        {
-                            if(attribute.AttributeType.Name== "TestFixtureSetUpAttribute")
-                            {
-                                testFixtureSetup = item;
-                                break;
-                            }
-                            if(attribute.AttributeType.Name== "TestFixtureTearDownAttribute")
-                            {
-                                testFixtureTearDown = item;
-                                break;
-                            }
-                            if(attribute.AttributeType.Name== "SetUpAttribute")
-                            {
-                                testMethodSetup = item;
-                                break;
-                            }
-                            if(attribute.AttributeType.Name== "TearDownAttribute")
-                            {
-                                testMethodTearDown = item;
-                                break;
-                            }
-                            if(attribute.AttributeType.Name =="TestAttribute")
-                            {
-                                methodsList.Add(item);
-                                break;
-                            }
-                        }
-                                             
-                       
-                    }
-                    PopulateTestTree(methodsList);
+
+                    lblTestClass.Visible = true;
+                    dropdownTestClass.Visible = true;
+
+                    PopulateTestClasses(testDll);
+                    
+                   
                 }
                 catch (SecurityException ex)
                 {
-                    Console.WriteLine(ex.ToString()); 
+                    Console.WriteLine(ex.ToString());
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     Console.WriteLine(ex.ToString());
                 }
+            }
+        }
+
+        private void PopulateMethods(Type testclass)
+        {
+            List<MethodInfo> methodsList = new List<MethodInfo>();
+            MethodInfo[] methods = testclass.GetMethods();
+
+            foreach (var item in methods)
+            {
+                IEnumerable<CustomAttributeData> customAttributes = item.CustomAttributes;
+                foreach (var attribute in customAttributes)
+                {
+                    if (attribute.AttributeType.Name == "TestFixtureSetUpAttribute")
+                    {
+                        testFixtureSetup = item;
+                        break;
+                    }
+                    if (attribute.AttributeType.Name == "TestFixtureTearDownAttribute")
+                    {
+                        testFixtureTearDown = item;
+                        break;
+                    }
+                    if (attribute.AttributeType.Name == "SetUpAttribute")
+                    {
+                        testMethodSetup = item;
+                        break;
+                    }
+                    if (attribute.AttributeType.Name == "TearDownAttribute")
+                    {
+                        testMethodTearDown = item;
+                        break;
+                    }
+                    if (attribute.AttributeType.Name == "TestAttribute")
+                    {
+                        methodsList.Add(item);
+                        break;
+                    }
+                }
+
+
+            }
+
+            PopulateTestTree(methodsList);
+        }
+
+        private void PopulateTestClasses(Assembly testDll)
+        {
+            Type[] testclass = testDll.GetTypes();
+            
+            foreach (var item in testclass)
+            {
+                IEnumerable<CustomAttributeData> customAttributes = item.CustomAttributes;
+                foreach (var attribute in customAttributes)
+                {
+                    if (attribute.AttributeType.Name == "TestFixtureAttribute")
+                    {
+                        testClasses.Add(item.Name, item);
+                        break;
+                    }
+                    
+                }
+
+            }
+
+            if (testClasses != null && testClasses.Keys != null)
+            {
+                dropdownTestClass.Items.AddRange(testClasses.Keys.ToArray());
             }
         }
 
@@ -200,7 +235,7 @@ namespace TestRunner
         {
             if(currentTreeNode==null)
             {
-                MessageBox.Show("Test dll is not attached!!");
+                MessageBox.Show("No test is selected!!");
                 return;
             }
             string message = CheckParameters();
@@ -215,7 +250,7 @@ namespace TestRunner
 
         private void RunTest()
         {
-            if(methodTree ==null || currentTreeNode ==null)
+            if (methodTree == null || currentTreeNode == null)
             {
                 return;
             }
@@ -225,19 +260,16 @@ namespace TestRunner
             {
                 methodTree.TryGetValue(currentTreeNode, out methodInfo);
             }
+            RunTest(methodInfo);
+        }
+
+        private void RunTest(MethodInfo methodInfo)
+        {
             try
             {
                 if (methodInfo != null)
                 {
-                    progressBarTests.Maximum = 100;
-                    progressBarTests.Step = 10;
-                    progressBarTests.Value = 0;
-
-                    RunMethod(methodInfo);
-                    this.progressBarTests.ForeColor = Color.Green;
-                    this.progressBarTests.BackColor = Color.Green;
-                    //currentTreeNode.BackColor = Color.Green;
-                    currentTreeNode.ForeColor = Color.Green;
+                    RunTestMethod(methodInfo);
 
                 }
             }
@@ -251,16 +283,30 @@ namespace TestRunner
             }
         }
 
+        private void RunTestMethod(MethodInfo methodInfo)
+        {
+            progressBarTests.Maximum = 100;
+            progressBarTests.Step = 10;
+            progressBarTests.Value = 0;
+            SetColor(Color.Yellow);
+            RunMethod(methodInfo);
+            SetColor(Color.Green);
+        }
+
+        private void SetColor(Color color)
+        {
+            this.progressBarTests.ForeColor = color;
+            this.progressBarTests.BackColor = color;
+            currentTreeNode.BackColor = color;
+           // currentTreeNode.ForeColor = color;
+        }
+
         private void HandleFailure(MethodInfo methodInfo, Exception ex)
         {
             txtBox_OutPut.Text = string.Empty;
-            //// 1040 - PBM_SETSTATE
-            //// 2 - red (error), 3 - yellow (paused), 1 - green (in progress) 
-            //SendMessage(progressBarTests.Handle, 1040, 2, 0);
-            progressBarTests.ForeColor = Color.Red;
-            progressBarTests.BackColor = Color.Red;
-            //currentTreeNode.BackColor = Color.Red;
-            currentTreeNode.ForeColor = Color.Red;
+            
+            SendMessage(progressBarTests.Handle, 1040, 2, 0);
+            SetColor(Color.Red);
 
             Exception innerException = ex.InnerException;
             string message = string.Empty;
@@ -273,6 +319,13 @@ namespace TestRunner
             txtBox_OutPut.Text = message;
             textBoxParameters.Visible = false;
             lblParameters.Visible = false;
+        }
+
+        private void PopulateOutputMessage(string msg)
+        {
+            txtBox_OutPut.Text = string.Empty;
+
+            txtBox_OutPut.Text = msg;
         }
 
         private void RunMethod(MethodInfo methodInfo)
@@ -325,6 +378,7 @@ namespace TestRunner
         private void RunMethod(MethodInfo methodInfo, object obj, Stopwatch stopwatch)
         {
             ParameterInfo[] parameterInfo = null;
+            StringBuilder methodResult = new StringBuilder();
 
             GetParammeters(methodInfo, ref parameterInfo);
 
@@ -358,21 +412,80 @@ namespace TestRunner
             stopwatch.Stop();
             progressBarTests.Value = 100;
             long timeTakentoRunMethod = stopwatch.ElapsedMilliseconds;
+            methodResult.AppendLine();
+            methodResult.AppendLine("Method " + methodInfo.Name);
+            methodResult.AppendLine("Passed");
+            methodResult.AppendLine("Time taken to run method: " + stopwatch.ElapsedMilliseconds +" milliseconds");
 
-            string message = string.Format("{0} is Pass in {1} milliseconds ", methodInfo.Name, timeTakentoRunMethod);
-
-            string[] output = File.ReadAllLines(testResultFilePath);
-
-            StringBuilder stringBuilder = new StringBuilder();
-
-            stringBuilder.AppendLine(message);
-
-            foreach (var item in output)
+            if (File.Exists(testResultFilePath))
             {
-                stringBuilder.AppendLine(item);
+                string[] output = File.ReadAllLines(testResultFilePath);
+                foreach (var item in output)
+                {
+                    methodResult.AppendLine(item);
+                }
             }
 
-            txtBox_OutPut.Text = stringBuilder.ToString();
+            
+            methodResult.AppendLine();
+            methodResult.AppendLine();
+
+            PopulateOutputMessage(methodResult.ToString());
+            
+        }
+
+        private void ResetResultWindow()
+        {
+            txtBox_OutPut.Text = string.Empty;
+        }
+
+        private void attachToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            AttachDll();
+            btn_Run.Enabled = true;
+        }
+
+        private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            Process.GetCurrentProcess().Kill();
+        }
+
+        private void helpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void fileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void howToUseToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            StringBuilder message = new StringBuilder();
+            message.AppendLine("1. Attach the test dll ");
+            message.AppendLine("2. All dependent dll which test dll needs should be in same folder as test dll");
+            message.AppendLine("3. Select test class");
+            message.AppendLine("4. Run test(s)");
+            MessageBox.Show(message.ToString());
+        }
+
+        private void contactToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            MessageBox.Show("anurag.kumar@microfocus.com");
+        }
+
+        private void dropdownTestClass_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            object selectedItem = dropdownTestClass.SelectedItem;
+            Type testclass = null;
+            testClasses.TryGetValue(selectedItem.ToString(), out testclass);
+           
+            if (testclass!=null)
+            {
+                PopulateMethods(testclass);
+            }
+
         }
     }
 }
