@@ -1,17 +1,130 @@
-﻿using System;
+﻿using NUnit.Framework;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
+using System.Drawing;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TestRunner
 {
+
     public class TestMethodHandler
     {
+        [DllImport("user32.dll")]
+        private static extern bool SendMessage(IntPtr hWnd, Int32 msg, Int32 wParam, Int32 lParam);
+
+        private const Int32 WM_USER = 0x0400;
+        private const Int32 CCM_FIRST = 0x2000;
+        private const Int32 PBM_SETBARCOLOR = WM_USER + 9;
+        private const Int32 PBM_SETBKCOLOR = CCM_FIRST + 1;
+
+
+        public TreeNode currentNode { get; set; }
+        TextBox textBoxParameters;
+        Label lblParameters;
+        CustomProgressBar progressBar;
+        TextBox outputText;
+
+        public TestMethodHandler(TextBox textBoxParameters,Label lblParameters,
+            CustomProgressBar progressBar,TextBox outputText)
+        {
+            this.textBoxParameters = textBoxParameters;
+            this.lblParameters = lblParameters;
+            this.progressBar = progressBar;
+            this.outputText = outputText;
+            
+        }
+
+        public void RunButtonClicked(object sender, EventArgs e)
+        {
+            if (currentNode == null)
+            {
+                MessageBox.Show("No test is selected!!");
+                return;
+            }
+            string message = CheckParameters(currentNode, textBoxParameters, lblParameters);
+            if (!string.IsNullOrEmpty(message) && string.IsNullOrEmpty(textBoxParameters.Text))
+            {
+                MessageBox.Show(message);
+                return;
+            }
+
+            RunTest();
+        }
+        private void SetColor(Color color)
+        {
+            this.progressBar.ForeColor = color;
+            this.progressBar.BackColor = color;
+            this.currentNode.BackColor = color;
+            // currentTreeNode.ForeColor = color;
+        }
+
+        private void HandleFailure(MethodInfo methodInfo, Exception ex)
+        {
+            OutputMessage.Instance.ResetMessage(this.outputText);
+
+            //SendMessage(progressBarTests.Handle, 1040, 2, 0);
+            SetColor(Color.Red);
+
+            Exception innerException = ex.InnerException;
+            string message = string.Empty;
+            if (innerException != null)
+            {
+                message = innerException.ToString();
+
+            }
+            message = message + Environment.NewLine + methodInfo.Name + " Test Failed";
+            OutputMessage.Instance.WriteMessage(message);
+            OutputMessage.Instance.CommitMessage(this.outputText);
+            //txtBox_OutPut.Text = message;
+            textBoxParameters.Visible = false;
+            lblParameters.Visible = false;
+        }
+        private void RunTest()
+        {
+            if (MethodTree == null || this.currentNode == null)
+            {
+                return;
+            }
+
+            MethodInfo methodInfo = null;
+            if (MethodTree.ContainsKey(this.currentNode))
+            {
+                MethodTree.TryGetValue(this.currentNode, out methodInfo);
+            }
+            RunTest(methodInfo);
+        }
+        private void RunTestMethod(MethodInfo methodInfo)
+        {
+            progressBar.Maximum = 100;
+            progressBar.Step = 10;
+            progressBar.Value = 0;
+            SetColor(Color.Yellow);
+            RunMethod(methodInfo);
+            SetColor(Color.Green);
+        }
+        private void RunTest(MethodInfo methodInfo)
+        {
+            try
+            {
+                if (methodInfo != null)
+                {
+                    RunTestMethod(methodInfo);
+
+                }
+            }
+            catch (AssertionException ex)
+            {
+                HandleFailure(methodInfo, ex);
+            }
+            catch (Exception ex)
+            {
+                HandleFailure(methodInfo, ex);
+            }
+        }
         public void PopulateMethods(Type testclass)
         {
             
@@ -104,19 +217,20 @@ namespace TestRunner
             }
         }
 
-        public void RunMethod(MethodInfo methodInfo,TextBox textBoxParameters,TextBox outputBox,bool runAll=false)
+        public void RunMethod(MethodInfo methodInfo,bool runAll=false)
         {
             Type type = methodInfo.ReflectedType;
 
             ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
 
             object obj = constructor.Invoke(new object[] { });
-            OutputMessage.Instance.ResetMessage(outputBox);
+
+            OutputMessage.Instance.ResetMessage(this.outputText);
 
 
             RunTestMethod(methodInfo, textBoxParameters, obj);
 
-            OutputMessage.Instance.CommitMessage(outputBox);
+            OutputMessage.Instance.CommitMessage(this.outputText);
         }
 
         private void RunTestMethod(MethodInfo methodInfo, TextBox textBoxParameters, object obj)

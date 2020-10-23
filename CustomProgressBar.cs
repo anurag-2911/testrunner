@@ -10,7 +10,7 @@ using System.Windows.Forms;
 
 namespace TestRunner
 {
-    class CustomProgressBar:ProgressBar
+    public class CustomProgressBar:ProgressBar
     {
         
         public CustomProgressBar()
