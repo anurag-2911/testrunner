@@ -29,100 +29,45 @@ namespace TestRunner
         private const Int32 PBM_SETBARCOLOR = WM_USER + 9;
         private const Int32 PBM_SETBKCOLOR = CCM_FIRST + 1;
 
-
-        TreeNode currentTreeNode;
-        Dictionary<TreeNode, MethodInfo> methodTree = new Dictionary<TreeNode, MethodInfo>();
-        string testResultFilePath = Environment.CurrentDirectory + "\\TestResult.txt";
-        MethodInfo testFixtureSetup = null;
-        MethodInfo testFixtureTearDown = null;
-        MethodInfo testMethodSetup = null;
-        MethodInfo testMethodTearDown = null;
-        Dictionary<string,Type> testClasses = new Dictionary<string, Type>();
-
+        AssemblyLoader assemblyLoader;
+        TestClassHandler testClass;
+        TestMethodHandler methodHandler;
+        TreeNode currentTreeNode;         
+                
         public TestRunnerForm()
         {
             InitializeComponent();
+            assemblyLoader = new AssemblyLoader();
+            testClass = new TestClassHandler();
+            methodHandler = new TestMethodHandler();
         }
 
         private void treeView_Tests_AfterSelect(object sender, TreeViewEventArgs treeViewEventArgs)
         {
             currentTreeNode = treeViewEventArgs.Node;
             this.ResetResultWindow();
-            string parameters=CheckParameters();
+            string parameters=methodHandler.CheckParameters(currentTreeNode,textBoxParameters,lblParameters);
             if(string.IsNullOrEmpty(parameters))
             {
                 textBoxParameters.Visible = false;
                 lblParameters.Visible = false;
             }
-        }
-
-        private string CheckParameters()
-        {
-            MethodInfo methodInfo;
-            string message = string.Empty;
-           
-            methodTree.TryGetValue(currentTreeNode, out methodInfo);
-            if (methodInfo != null)
-            {
-                try
-                {
-                    ParameterInfo[] parameters = null;
-                    message= GetParammeters(methodInfo, ref parameters);
-                    if (parameters.Length > 0)
-                    {
-                        textBoxParameters.Visible = true;
-                        lblParameters.Visible = true;
-                        lblParameters.Width = parameters.Length + 10;
-                        lblParameters.Text = message;
-                    }
-                }
-                catch (Exception)
-                {
-
-                }
-
-            }
-            return message;
-        }
-
-        private static string GetParammeters(MethodInfo methodInfo,ref ParameterInfo[] parameters)
-        {
-            StringBuilder parameterMessage = new StringBuilder();
-            parameters = methodInfo.GetParameters();
-            if (parameters.Length > 0)
-            {
-                
-                parameterMessage.Append("Enter parameter(s) ");
-                foreach (var item in parameters)
-                {
-                    parameterMessage.Append(item.Name);
-                    parameterMessage.Append(",");
-                }
-                parameterMessage.Remove(parameterMessage.Length-1, 1);
-                
-            }
-            return parameterMessage.ToString();
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-            
-        }
-
+        }    
+               
         private void PopulateTestTree(List<MethodInfo> testMethods)
         {
             try
             {
                 treeView_Tests.Nodes.Clear();
-                methodTree.Clear();
+                methodHandler.MethodTree.Clear();
 
                 foreach (var item in testMethods)
                 {
                     TreeNode treeNode = new TreeNode(item.Name);
-                    methodTree.Add(treeNode, item);
+                    methodHandler.MethodTree.Add(treeNode, item);
                 }
 
-                treeView_Tests.Nodes.AddRange(methodTree.Keys.ToArray());
+                treeView_Tests.Nodes.AddRange(methodHandler.MethodTree.Keys.ToArray());
 
             }
             catch (Exception exception)
@@ -133,17 +78,17 @@ namespace TestRunner
             
         }
 
+        /// <summary>
+        /// This method will be called to load the test library
+        /// </summary>
         private void AttachDll()
         {
             
-
             if (FileUploadDailog.ShowDialog() == DialogResult.OK)
             {
                 try
                 {
-                    var filePath = FileUploadDailog.FileName;
-
-                    Assembly testDll = Assembly.LoadFrom(filePath);
+                    Assembly testDll = assemblyLoader.LoadTestAssembly(FileUploadDailog.FileName);
 
                     lblTestClass.Visible = true;
                     dropdownTestClass.Visible = true;
@@ -154,80 +99,28 @@ namespace TestRunner
                 }
                 catch (SecurityException ex)
                 {
-                    Console.WriteLine(ex.ToString());
+                    MessageBox.Show(ex.ToString());
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.ToString());
+                    MessageBox.Show(ex.ToString());
                 }
             }
         }
 
         private void PopulateMethods(Type testclass)
         {
-            List<MethodInfo> methodsList = new List<MethodInfo>();
-            MethodInfo[] methods = testclass.GetMethods();
-
-            foreach (var item in methods)
-            {
-                IEnumerable<CustomAttributeData> customAttributes = item.CustomAttributes;
-                foreach (var attribute in customAttributes)
-                {
-                    if (attribute.AttributeType.Name == "TestFixtureSetUpAttribute")
-                    {
-                        testFixtureSetup = item;
-                        break;
-                    }
-                    if (attribute.AttributeType.Name == "TestFixtureTearDownAttribute")
-                    {
-                        testFixtureTearDown = item;
-                        break;
-                    }
-                    if (attribute.AttributeType.Name == "SetUpAttribute")
-                    {
-                        testMethodSetup = item;
-                        break;
-                    }
-                    if (attribute.AttributeType.Name == "TearDownAttribute")
-                    {
-                        testMethodTearDown = item;
-                        break;
-                    }
-                    if (attribute.AttributeType.Name == "TestAttribute")
-                    {
-                        methodsList.Add(item);
-                        break;
-                    }
-                }
-
-
-            }
-
-            PopulateTestTree(methodsList);
+            methodHandler.PopulateMethods(testclass);
+            PopulateTestTree(methodHandler.MethodList);
         }
 
         private void PopulateTestClasses(Assembly testDll)
         {
-            Type[] testclass = testDll.GetTypes();
-            
-            foreach (var item in testclass)
-            {
-                IEnumerable<CustomAttributeData> customAttributes = item.CustomAttributes;
-                foreach (var attribute in customAttributes)
-                {
-                    if (attribute.AttributeType.Name == "TestFixtureAttribute")
-                    {
-                        testClasses.Add(item.Name, item);
-                        break;
-                    }
-                    
-                }
+            testClass.PopulateTestClasses(testDll);
 
-            }
-
-            if (testClasses != null && testClasses.Keys != null)
+            if (testClass.GetTestClasses != null && testClass.GetTestClasses.Keys != null)
             {
-                dropdownTestClass.Items.AddRange(testClasses.Keys.ToArray());
+                dropdownTestClass.Items.AddRange(testClass.GetTestClasses.Keys.ToArray());
             }
         }
 
@@ -238,7 +131,7 @@ namespace TestRunner
                 MessageBox.Show("No test is selected!!");
                 return;
             }
-            string message = CheckParameters();
+            string message = methodHandler.CheckParameters(currentTreeNode,textBoxParameters,lblParameters);
             if(!string.IsNullOrEmpty(message) && string.IsNullOrEmpty(textBoxParameters.Text))
             {
                 MessageBox.Show(message);
@@ -250,15 +143,15 @@ namespace TestRunner
 
         private void RunTest()
         {
-            if (methodTree == null || currentTreeNode == null)
+            if (methodHandler.MethodTree == null || currentTreeNode == null)
             {
                 return;
             }
 
             MethodInfo methodInfo = null;
-            if (methodTree.ContainsKey(currentTreeNode))
+            if (methodHandler.MethodTree.ContainsKey(currentTreeNode))
             {
-                methodTree.TryGetValue(currentTreeNode, out methodInfo);
+                methodHandler.MethodTree.TryGetValue(currentTreeNode, out methodInfo);
             }
             RunTest(methodInfo);
         }
@@ -289,7 +182,7 @@ namespace TestRunner
             progressBarTests.Step = 10;
             progressBarTests.Value = 0;
             SetColor(Color.Yellow);
-            RunMethod(methodInfo);
+            methodHandler.RunMethod(methodInfo,textBoxParameters,txtBox_OutPut);
             SetColor(Color.Green);
         }
 
@@ -316,124 +209,14 @@ namespace TestRunner
 
             }
             message = message + Environment.NewLine + methodInfo.Name + " Test Failed";
-            txtBox_OutPut.Text = message;
+            OutputMessage.Instance.WriteMessage(message);
+            OutputMessage.Instance.CommitMessage(txtBox_OutPut);
+            //txtBox_OutPut.Text = message;
             textBoxParameters.Visible = false;
             lblParameters.Visible = false;
-        }
+        }                             
 
-        private void PopulateOutputMessage(string msg)
-        {
-            txtBox_OutPut.Text = string.Empty;
-
-            txtBox_OutPut.Text = msg;
-        }
-
-        private void RunMethod(MethodInfo methodInfo)
-        {
-            Type type = methodInfo.ReflectedType;
-
-            ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
-
-            object obj = constructor.Invoke(new object[] { });
-
-            Stopwatch stopwatch = new Stopwatch();
-
-            stopwatch.Start();
-            Setup(obj);
-
-            RunMethod(methodInfo, obj, stopwatch);
-
-            TearDown(obj);
-
-            textBoxParameters.Visible = false;
-
-            lblParameters.Visible = false;
-
-        }
-
-        private void TearDown(object obj)
-        {
-            if (testMethodTearDown != null)
-            {
-                testMethodTearDown.Invoke(obj, new object[] { });
-            }
-            if (testFixtureTearDown != null)
-            {
-                testFixtureTearDown.Invoke(obj, new object[] { });
-            }
-        }
-
-        private void Setup(object obj)
-        {
-            if (testFixtureSetup != null)
-            {
-                testFixtureSetup.Invoke(obj, new object[] { });
-            }
-            if (testMethodSetup != null)
-            {
-                testMethodSetup.Invoke(obj, new object[] { });
-            }
-        }
-
-        private void RunMethod(MethodInfo methodInfo, object obj, Stopwatch stopwatch)
-        {
-            ParameterInfo[] parameterInfo = null;
-            StringBuilder methodResult = new StringBuilder();
-
-            GetParammeters(methodInfo, ref parameterInfo);
-
-            string parameters = string.Empty;
-
-            if (parameterInfo != null && parameterInfo.Length > 0)
-            {
-                parameters = textBoxParameters.Text;
-            }
-
-            if (string.IsNullOrEmpty(parameters))
-            {
-                methodInfo.Invoke(obj, new object[] { });
-            }
-
-            else
-            {
-                //Todo: make it generic
-                object[] args = parameters.Split(',');
-                int[] counters = new int[args.Length];
-                for (int i = 0; i < args.Length; i++)
-                {
-                    counters[i] = Convert.ToInt32(args[i]);
-                }
-                methodInfo.Invoke(obj, new object[] { counters[0] });
-            }
-
-
-
-            txtBox_OutPut.Text = string.Empty;
-            stopwatch.Stop();
-            progressBarTests.Value = 100;
-            long timeTakentoRunMethod = stopwatch.ElapsedMilliseconds;
-            methodResult.AppendLine();
-            methodResult.AppendLine("Method " + methodInfo.Name);
-            methodResult.AppendLine("Passed");
-            methodResult.AppendLine("Time taken to run method: " + stopwatch.ElapsedMilliseconds +" milliseconds");
-
-            if (File.Exists(testResultFilePath))
-            {
-                string[] output = File.ReadAllLines(testResultFilePath);
-                foreach (var item in output)
-                {
-                    methodResult.AppendLine(item);
-                }
-            }
-
-            
-            methodResult.AppendLine();
-            methodResult.AppendLine();
-
-            PopulateOutputMessage(methodResult.ToString());
-            
-        }
-
+       
         private void ResetResultWindow()
         {
             txtBox_OutPut.Text = string.Empty;
@@ -462,24 +245,20 @@ namespace TestRunner
 
         private void howToUseToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            StringBuilder message = new StringBuilder();
-            message.AppendLine("1. Attach the test dll ");
-            message.AppendLine("2. All dependent dll which test dll needs should be in same folder as test dll");
-            message.AppendLine("3. Select test class");
-            message.AppendLine("4. Run test(s)");
-            MessageBox.Show(message.ToString());
+           
+            MessageBox.Show(InformationMessage.Instance.HowToUseMessage());
         }
 
         private void contactToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            MessageBox.Show("anurag.kumar@microfocus.com");
+            MessageBox.Show(InformationMessage.Instance.ContactMessage());
         }
 
         private void dropdownTestClass_SelectedIndexChanged(object sender, EventArgs e)
         {
             object selectedItem = dropdownTestClass.SelectedItem;
-            Type testclass = null;
-            testClasses.TryGetValue(selectedItem.ToString(), out testclass);
+            Type testclass;
+            testClass.GetTestClasses.TryGetValue(selectedItem.ToString(), out testclass);
            
             if (testclass!=null)
             {

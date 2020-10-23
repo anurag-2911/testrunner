@@ -73,9 +73,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AssemblyLoader.cs" />
     <Compile Include="CustomProgressBar.cs">
       <SubType>Component</SubType>
     </Compile>
+    <Compile Include="InformationMessage.cs" />
+    <Compile Include="OutputMessage.cs" />
+    <Compile Include="TestClassHandler.cs" />
+    <Compile Include="TestMethodHandler.cs" />
     <Compile Include="TestRunnerForm.cs">
       <SubType>Form</SubType>
     </Compile>
