@@ -54,7 +54,7 @@ namespace TestRunner
             
         }
 
-        private void RunAllTests_Click(object sender, System.EventArgs e)
+        private void RunAllTests_Click(object sender, EventArgs e)
         {
 
         }

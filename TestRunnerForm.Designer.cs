@@ -206,7 +206,7 @@ namespace TestRunner
             this.RunAllTests.TabIndex = 12;
             this.RunAllTests.Text = "Run All Tests";
             this.RunAllTests.UseVisualStyleBackColor = true;
-            this.RunAllTests.Click += RunAllTests_Click;
+            this.RunAllTests.Visible = false;
             // 
             // TestRunnerForm
             // 
