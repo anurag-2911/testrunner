@@ -32,7 +32,7 @@ namespace TestRunner
         private void dropdownTestClass_SelectedIndexChanged(object sender, EventArgs e)
         {
             object selectedItem = dropdownTestClass.SelectedItem;
-
+            btnRunAllTests.Enabled = true;
             Type testclass;
 
             testClass.GetTestClasses.TryGetValue(selectedItem.ToString(), out testclass);
@@ -54,9 +54,9 @@ namespace TestRunner
             
         }
 
-        private void RunAllTests_Click(object sender, EventArgs e)
+        private void btnRunAllTests_Click(object sender, EventArgs e)
         {
-
+            methodHandler.RunAllTestsButtonClicked(sender, e);
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -87,8 +87,8 @@ namespace TestRunner
 
         private void PopulateMethodTree(Type testclass)
         {
-            methodHandler = new TestMethodHandler(textBoxParameters, lblParameters, progressBarTests, txtBox_OutPut);
-
+            methodHandler = new TestMethodHandler(textBoxParameters, lblParameters, progressBarTests, txtBox_OutPut,testclass);
+            
             if (testclass != null)
             {
                 PopulateMethods(testclass);
@@ -164,5 +164,7 @@ namespace TestRunner
                 dropdownTestClass.Items.AddRange(testClass.GetTestClasses.Keys.ToArray());
             }
         }
+
+       
     }
 }

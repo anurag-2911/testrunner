@@ -47,8 +47,8 @@ namespace TestRunner
             this.contactToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dropdownTestClass = new System.Windows.Forms.ComboBox();
             this.lblTestClass = new System.Windows.Forms.Label();
+            this.btnRunAllTests = new System.Windows.Forms.Button();
             this.progressBarTests = new TestRunner.CustomProgressBar();
-            this.RunAllTests = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -187,6 +187,17 @@ namespace TestRunner
             this.lblTestClass.Text = "Test Class";
             this.lblTestClass.Visible = false;
             // 
+            // btnRunAllTests
+            // 
+            this.btnRunAllTests.Enabled = false;
+            this.btnRunAllTests.Location = new System.Drawing.Point(670, 86);
+            this.btnRunAllTests.Name = "btnRunAllTests";
+            this.btnRunAllTests.Size = new System.Drawing.Size(152, 44);
+            this.btnRunAllTests.TabIndex = 12;
+            this.btnRunAllTests.Text = "Run All Tests";
+            this.btnRunAllTests.UseVisualStyleBackColor = true;
+            this.btnRunAllTests.Click += new System.EventHandler(this.btnRunAllTests_Click);
+            // 
             // progressBarTests
             // 
             this.progressBarTests.BackColor = System.Drawing.Color.Green;
@@ -198,23 +209,13 @@ namespace TestRunner
             this.progressBarTests.TabIndex = 8;
             this.progressBarTests.Visible = false;
             // 
-            // RunAllTests
-            // 
-            this.RunAllTests.Location = new System.Drawing.Point(670, 86);
-            this.RunAllTests.Name = "RunAllTests";
-            this.RunAllTests.Size = new System.Drawing.Size(152, 44);
-            this.RunAllTests.TabIndex = 12;
-            this.RunAllTests.Text = "Run All Tests";
-            this.RunAllTests.UseVisualStyleBackColor = true;
-            this.RunAllTests.Visible = false;
-            // 
             // TestRunnerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1806, 795);
             this.ControlBox = false;
-            this.Controls.Add(this.RunAllTests);
+            this.Controls.Add(this.btnRunAllTests);
             this.Controls.Add(this.lblTestClass);
             this.Controls.Add(this.dropdownTestClass);
             this.Controls.Add(this.progressBarTests);
@@ -257,7 +258,7 @@ namespace TestRunner
         private System.Windows.Forms.ToolStripMenuItem contactToolStripMenuItem;
         private System.Windows.Forms.ComboBox dropdownTestClass;
         private System.Windows.Forms.Label lblTestClass;
-        private System.Windows.Forms.Button RunAllTests;
+        private System.Windows.Forms.Button btnRunAllTests;
     }
 }
 

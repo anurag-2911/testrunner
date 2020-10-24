@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -27,23 +28,55 @@ namespace TestRunner
         Label lblParameters;
         CustomProgressBar progressBar;
         TextBox outputText;
+        public object SelectedItem { get; set; }
+        private readonly Type selectedType;
+        private object reflectedObject;
 
         public TestMethodHandler(TextBox textBoxParameters,Label lblParameters,
-            CustomProgressBar progressBar,TextBox outputText)
+            CustomProgressBar progressBar,TextBox outputText,Type selectedClass)
         {
             this.textBoxParameters = textBoxParameters;
             this.lblParameters = lblParameters;
             this.progressBar = progressBar;
             this.outputText = outputText;
+            this.selectedType = selectedClass;
             
         }
+        public void RunAllTestsButtonClicked(object sender,EventArgs e)
+        {           
+            OutputMessage.Instance.ResetMessage(outputText);
+            
+            if (reflectedObject == null)
+            {
+                reflectedObject = GetReflectedObject(selectedType);
+            }
+            
+            FixtureSetup(reflectedObject);
+            
+            foreach (var item in MethodList)
+            {
+                TreeNode treeNode = MethodTree.FirstOrDefault(x => x.Value == item).Key;
+                if(treeNode!=null)
+                {
+                    currentNode = treeNode;
+                }
+                
+                RunTest(item);
+            }
+            FixtureTearDown(reflectedObject);
 
+            OutputMessage.Instance.CommitMessage(outputText);
+        }
         public void RunButtonClicked(object sender, EventArgs e)
         {
             if (currentNode == null)
             {
-                MessageBox.Show("No test is selected!!");
+                MessageBox.Show("No test method is selected!!");
                 return;
+            }
+            if(reflectedObject==null)
+            {
+                reflectedObject = GetReflectedObject(MethodTree[currentNode]);
             }
             string message = CheckParameters(currentNode, textBoxParameters, lblParameters);
             if (!string.IsNullOrEmpty(message) && string.IsNullOrEmpty(textBoxParameters.Text))
@@ -52,24 +85,28 @@ namespace TestRunner
                 return;
             }
 
+            OutputMessage.Instance.ResetMessage(outputText);
+
+            FixtureSetup(reflectedObject);
+            
             RunTest();
+
+            FixtureTearDown(reflectedObject);
         }
         private void SetColor(Color color)
         {
             this.progressBar.ForeColor = color;
             this.progressBar.BackColor = color;
-            this.currentNode.BackColor = color;
+            this.currentNode.ForeColor = color;
             // currentTreeNode.ForeColor = color;
         }
 
         private void HandleFailure(MethodInfo methodInfo, Exception ex)
         {
-            OutputMessage.Instance.ResetMessage(this.outputText);
-
-            //SendMessage(progressBarTests.Handle, 1040, 2, 0);
             SetColor(Color.Red);
-
+            
             Exception innerException = ex.InnerException;
+            
             string message = string.Empty;
             if (innerException != null)
             {
@@ -78,8 +115,6 @@ namespace TestRunner
             }
             message = message + Environment.NewLine + methodInfo.Name + " Test Failed";
             OutputMessage.Instance.WriteMessage(message);
-            OutputMessage.Instance.CommitMessage(this.outputText);
-            //txtBox_OutPut.Text = message;
             textBoxParameters.Visible = false;
             lblParameters.Visible = false;
         }
@@ -95,25 +130,35 @@ namespace TestRunner
             {
                 MethodTree.TryGetValue(this.currentNode, out methodInfo);
             }
+           
             RunTest(methodInfo);
+            
+            OutputMessage.Instance.CommitMessage(outputText);
         }
-        private void RunTestMethod(MethodInfo methodInfo)
+       
+
+        private void SetProgressBar()
         {
             progressBar.Maximum = 100;
             progressBar.Step = 10;
             progressBar.Value = 0;
-            SetColor(Color.Yellow);
-            RunMethod(methodInfo);
-            SetColor(Color.Green);
         }
+
         private void RunTest(MethodInfo methodInfo)
         {
             try
             {
                 if (methodInfo != null)
                 {
-                    RunTestMethod(methodInfo);
+                    SetColor(Color.Orange);
 
+                    MethodSetup(reflectedObject);
+
+                    RunMethod(methodInfo,textBoxParameters);
+
+                    MethodTearDown(reflectedObject);
+
+                    SetColor(Color.Green);
                 }
             }
             catch (AssertionException ex)
@@ -217,34 +262,24 @@ namespace TestRunner
             }
         }
 
-        public void RunMethod(MethodInfo methodInfo,bool runAll=false)
+        private object GetReflectedObject(Type type)
+        {
+            ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
+
+            object obj = constructor.Invoke(new object[] { });
+            return obj;
+        }
+        
+        private object GetReflectedObject(MethodInfo methodInfo)
         {
             Type type = methodInfo.ReflectedType;
 
             ConstructorInfo constructor = type.GetConstructor(Type.EmptyTypes);
 
             object obj = constructor.Invoke(new object[] { });
-
-            OutputMessage.Instance.ResetMessage(this.outputText);
-
-
-            RunTestMethod(methodInfo, textBoxParameters, obj);
-
-            OutputMessage.Instance.CommitMessage(this.outputText);
+            return obj;
         }
-
-        private void RunTestMethod(MethodInfo methodInfo, TextBox textBoxParameters, object obj)
-        {
-            
-            MethodSetup(obj);
-
-            RunMethod(methodInfo, obj, textBoxParameters);
-
-            MethodTearDown(obj);
-            
-            
-        }
-
+                
         private static string GetParammeters(MethodInfo methodInfo, ref ParameterInfo[] parameters)
         {
             StringBuilder parameterMessage = new StringBuilder();
@@ -263,8 +298,9 @@ namespace TestRunner
             }
             return parameterMessage.ToString();
         }
-        private void RunMethod(MethodInfo methodInfo, object obj,TextBox textBoxParameters)
+        private void RunMethod(MethodInfo methodInfo, TextBox textBoxParameters)
         {
+            
             StringBuilder message = new StringBuilder();
             Stopwatch stopwatch = new Stopwatch();
             stopwatch.Start();
@@ -283,7 +319,7 @@ namespace TestRunner
 
             if (string.IsNullOrEmpty(parameters))
             {
-                methodInfo.Invoke(obj, new object[] { });
+                methodInfo.Invoke(reflectedObject, new object[] { });
             }
 
             else
@@ -295,14 +331,12 @@ namespace TestRunner
                 {
                     counters[i] = Convert.ToInt32(args[i]);
                 }
-                methodInfo.Invoke(obj, new object[] { counters[0] });
+                methodInfo.Invoke(reflectedObject, new object[] { counters[0] });
             }
 
 
-
             stopwatch.Stop();
-
-            
+           
             message.AppendLine();
             message.AppendLine("Method " + methodInfo.Name);
             message.AppendLine("Passed");
@@ -312,7 +346,7 @@ namespace TestRunner
 
 
         }
-       
+
         public string CheckParameters(TreeNode currentTreeNode,TextBox textBoxParameters, Label lblParameters)
         {
             MethodInfo methodInfo;

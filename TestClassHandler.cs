@@ -37,5 +37,22 @@ namespace TestRunner
                 return testClasses;
             }
         }
+
+        public Type GetClass(string className)
+        {
+            if (testClasses.ContainsKey(className))
+            {
+                return testClasses[className];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+
     }
+
+
+
 }
