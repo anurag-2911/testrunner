@@ -21,7 +21,7 @@ namespace TestRunner
             outMessage.AppendLine(message);
         }
 
-        public void CommitMessage(TextBox textBox)
+        public void CommitMessage(RichTextBox textBox)
         {
             if (File.Exists(testResultFilePath))
             {
@@ -32,7 +32,7 @@ namespace TestRunner
             textBox.Text = outMessage.ToString();
         }
 
-        public void ResetMessage(TextBox textBox)
+        public void ResetMessage(RichTextBox textBox)
         {
             textBox.Text = string.Empty;
             outMessage.Clear();

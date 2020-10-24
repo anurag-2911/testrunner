@@ -50,13 +50,17 @@ namespace TestRunner
       
         private void btn_Run_Click(object sender, EventArgs e)
         {
-            methodHandler.RunButtonClicked(sender, e);            
+            SwitchButtonState(btnRunAllTests, false);
+            methodHandler.RunButtonClicked(sender, e);
+            SwitchButtonState(btnRunAllTests, true);
             
         }
 
         private void btnRunAllTests_Click(object sender, EventArgs e)
         {
+            SwitchButtonState(btn_Run, false);
             methodHandler.RunAllTestsButtonClicked(sender, e);
+            SwitchButtonState(btn_Run, true);
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -87,7 +91,7 @@ namespace TestRunner
 
         private void PopulateMethodTree(Type testclass)
         {
-            methodHandler = new TestMethodHandler(textBoxParameters, lblParameters, progressBarTests, txtBox_OutPut,testclass);
+            methodHandler = new TestMethodHandler(textBoxParameters, lblParameters, progressBarTests, txtBoxOutput,testclass);
             
             if (testclass != null)
             {
@@ -165,6 +169,11 @@ namespace TestRunner
             }
         }
 
-       
+        private void SwitchButtonState(Button button, bool value)
+        {
+            button.Enabled = value;
+        }
+
+
     }
 }

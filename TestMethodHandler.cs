@@ -27,13 +27,13 @@ namespace TestRunner
         TextBox textBoxParameters;
         Label lblParameters;
         CustomProgressBar progressBar;
-        TextBox outputText;
+        RichTextBox outputText;
         public object SelectedItem { get; set; }
         private readonly Type selectedType;
         private object reflectedObject;
 
         public TestMethodHandler(TextBox textBoxParameters,Label lblParameters,
-            CustomProgressBar progressBar,TextBox outputText,Type selectedClass)
+            CustomProgressBar progressBar,RichTextBox outputText,Type selectedClass)
         {
             this.textBoxParameters = textBoxParameters;
             this.lblParameters = lblParameters;
@@ -74,6 +74,7 @@ namespace TestRunner
                 MessageBox.Show("No test method is selected!!");
                 return;
             }
+            
             if(reflectedObject==null)
             {
                 reflectedObject = GetReflectedObject(MethodTree[currentNode]);
@@ -93,6 +94,8 @@ namespace TestRunner
 
             FixtureTearDown(reflectedObject);
         }
+
+        
         private void SetColor(Color color)
         {
             this.progressBar.ForeColor = color;
@@ -112,6 +115,10 @@ namespace TestRunner
             {
                 message = innerException.ToString();
 
+            }
+            else
+            {
+                message = ex.ToString();
             }
             message = message + Environment.NewLine + methodInfo.Name + " Test Failed";
             OutputMessage.Instance.WriteMessage(message);

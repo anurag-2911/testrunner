@@ -33,7 +33,6 @@ namespace TestRunner
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(TestRunnerForm));
             this.treeView_Tests = new System.Windows.Forms.TreeView();
             this.btn_Run = new System.Windows.Forms.Button();
-            this.txtBox_OutPut = new System.Windows.Forms.TextBox();
             this.lblParameters = new System.Windows.Forms.Label();
             this.textBoxParameters = new System.Windows.Forms.TextBox();
             this.FileUploadDailog = new System.Windows.Forms.OpenFileDialog();
@@ -49,6 +48,7 @@ namespace TestRunner
             this.lblTestClass = new System.Windows.Forms.Label();
             this.btnRunAllTests = new System.Windows.Forms.Button();
             this.progressBarTests = new TestRunner.CustomProgressBar();
+            this.txtBoxOutput = new System.Windows.Forms.RichTextBox();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -70,14 +70,6 @@ namespace TestRunner
             this.btn_Run.Text = "Run Test";
             this.btn_Run.UseVisualStyleBackColor = true;
             this.btn_Run.Click += new System.EventHandler(this.btn_Run_Click);
-            // 
-            // txtBox_OutPut
-            // 
-            this.txtBox_OutPut.Location = new System.Drawing.Point(500, 136);
-            this.txtBox_OutPut.Multiline = true;
-            this.txtBox_OutPut.Name = "txtBox_OutPut";
-            this.txtBox_OutPut.Size = new System.Drawing.Size(1277, 477);
-            this.txtBox_OutPut.TabIndex = 2;
             // 
             // lblParameters
             // 
@@ -209,19 +201,29 @@ namespace TestRunner
             this.progressBarTests.TabIndex = 8;
             this.progressBarTests.Visible = false;
             // 
+            // txtBoxOutput
+            // 
+            this.txtBoxOutput.Font = new System.Drawing.Font("Verdana", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtBoxOutput.Location = new System.Drawing.Point(489, 136);
+            this.txtBoxOutput.Name = "txtBoxOutput";
+            this.txtBoxOutput.Size = new System.Drawing.Size(1277, 477);
+            this.txtBoxOutput.TabIndex = 13;
+            this.txtBoxOutput.Text = "";
+            this.txtBoxOutput.WordWrap = false;
+            // 
             // TestRunnerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1806, 795);
             this.ControlBox = false;
+            this.Controls.Add(this.txtBoxOutput);
             this.Controls.Add(this.btnRunAllTests);
             this.Controls.Add(this.lblTestClass);
             this.Controls.Add(this.dropdownTestClass);
             this.Controls.Add(this.progressBarTests);
             this.Controls.Add(this.textBoxParameters);
             this.Controls.Add(this.lblParameters);
-            this.Controls.Add(this.txtBox_OutPut);
             this.Controls.Add(this.btn_Run);
             this.Controls.Add(this.treeView_Tests);
             this.Controls.Add(this.menuStrip1);
@@ -243,7 +245,6 @@ namespace TestRunner
 
         private System.Windows.Forms.TreeView treeView_Tests;
         private System.Windows.Forms.Button btn_Run;
-        private System.Windows.Forms.TextBox txtBox_OutPut;
         private System.Windows.Forms.Label lblParameters;
         private System.Windows.Forms.TextBox textBoxParameters;
         private System.Windows.Forms.OpenFileDialog FileUploadDailog;
@@ -259,6 +260,7 @@ namespace TestRunner
         private System.Windows.Forms.ComboBox dropdownTestClass;
         private System.Windows.Forms.Label lblTestClass;
         private System.Windows.Forms.Button btnRunAllTests;
+        private System.Windows.Forms.RichTextBox txtBoxOutput;
     }
 }
 
