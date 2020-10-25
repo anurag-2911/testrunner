@@ -1,2 +1,2 @@
 # testrunner
-C# test runner windows form application, attach an nunit project and run all the tests in class as defined in app.config .
+C# unit test runner attach an assembly with tests written for nunit and run one test at a time or all tests .
