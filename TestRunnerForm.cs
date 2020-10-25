@@ -45,13 +45,17 @@ namespace TestRunner
             btn_Run.Enabled = true;
             currentTreeNode = treeViewEventArgs.Node;
             methodHandler.currentNode = currentTreeNode;
+            methodHandler.CheckParameters(currentTreeNode, textBoxParameters, lblParameters);
+            
         }    
                
       
         private void btn_Run_Click(object sender, EventArgs e)
         {
             SwitchButtonState(btnRunAllTests, false);
+            
             methodHandler.RunButtonClicked(sender, e);
+            
             SwitchButtonState(btnRunAllTests, true);
             
         }

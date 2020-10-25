@@ -1,6 +1,7 @@
 ﻿using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
@@ -31,7 +32,7 @@ namespace TestRunner
         public object SelectedItem { get; set; }
         private readonly Type selectedType;
         private object reflectedObject;
-
+        private const int Fill = 50;
         public TestMethodHandler(TextBox textBoxParameters,Label lblParameters,
             CustomProgressBar progressBar,RichTextBox outputText,Type selectedClass)
         {
@@ -110,18 +111,30 @@ namespace TestRunner
             
             Exception innerException = ex.InnerException;
             
-            string message = string.Empty;
+            StringBuilder message = new StringBuilder();
+            string exceptioInfo = string.Empty;
             if (innerException != null)
             {
-                message = innerException.ToString();
+                exceptioInfo = innerException.ToString();
 
             }
             else
             {
-                message = ex.ToString();
+                exceptioInfo = ex.ToString();
             }
-            message = message + Environment.NewLine + methodInfo.Name + " Test Failed";
-            OutputMessage.Instance.WriteMessage(message);
+            string fill = new String('*', Fill);
+            message.AppendLine(fill);
+            message.AppendLine("Method Name: " + methodInfo.Name);
+            message.AppendLine("Result: Failed");
+            if (!string.IsNullOrEmpty(exceptioInfo))
+            {
+                message.AppendLine(exceptioInfo);
+            }
+            //message.AppendLine("Time taken to run method: " + stopwatch.ElapsedMilliseconds + " milliseconds");
+            message.AppendLine(fill);
+            message.AppendLine();
+            
+            OutputMessage.Instance.WriteMessage(message.ToString());
             textBoxParameters.Visible = false;
             lblParameters.Visible = false;
         }
@@ -234,7 +247,8 @@ namespace TestRunner
 
         public Dictionary<TreeNode, MethodInfo> MethodTree { get; } = new Dictionary<TreeNode, MethodInfo>();
 
-       
+        public static int Fill1 => Fill;
+
         private void FixtureTearDown(object obj)
         {
             if (this.TestFixtureTearDown != null)
@@ -313,45 +327,65 @@ namespace TestRunner
             stopwatch.Start();
 
             ParameterInfo[] parameterInfo = null;
-            StringBuilder methodResult = new StringBuilder();
-
+            
             GetParammeters(methodInfo, ref parameterInfo);
 
-            string parameters = string.Empty;
+            string parametersInput = string.Empty;
 
             if (parameterInfo != null && parameterInfo.Length > 0)
             {
-                parameters = textBoxParameters.Text;
+                parametersInput = textBoxParameters.Text;
             }
 
-            if (string.IsNullOrEmpty(parameters))
+            if (parameterInfo.Length==0)
             {
                 methodInfo.Invoke(reflectedObject, new object[] { });
             }
 
             else
             {
-                //Todo: make it generic
-                object[] args = parameters.Split(',');
-                int[] counters = new int[args.Length];
-                for (int i = 0; i < args.Length; i++)
+                object[] arguments = new object[parameterInfo.Length];
+
+                object[] inputParamsArray = parametersInput.Split(',');
+                
+                for (int i = 0; i < parameterInfo.Length; i++)
                 {
-                    counters[i] = Convert.ToInt32(args[i]);
+                    TypeConverter typeConverter = TypeDescriptor.GetConverter(parameterInfo[i].ParameterType);
+                    if (!string.IsNullOrEmpty(textBoxParameters.Text))
+                    {
+                        arguments[i] = typeConverter.ConvertFrom(inputParamsArray[i]);
+                    }
+                    else
+                    {
+                        arguments[i] = GetDefaultValue(parameterInfo[i].ParameterType);
+                    }
                 }
-                methodInfo.Invoke(reflectedObject, new object[] { counters[0] });
+                            
+                               
+                methodInfo.Invoke(reflectedObject, arguments);
             }
 
 
             stopwatch.Stop();
-           
-            message.AppendLine();
-            message.AppendLine("Method " + methodInfo.Name);
-            message.AppendLine("Passed");
+            string fill = new String('*', Fill);
+            message.AppendLine(fill);
+            message.AppendLine("Method Name: " + methodInfo.Name);
+            message.AppendLine("Result: Passed");
             message.AppendLine("Time taken to run method: " + stopwatch.ElapsedMilliseconds + " milliseconds");
+            message.AppendLine(fill);
+            message.AppendLine();
 
             OutputMessage.Instance.WriteMessage(message.ToString());
 
 
+        }
+
+        private object GetDefaultValue(Type t)
+        {
+            if (t.IsValueType)
+                return Activator.CreateInstance(t);
+
+            return null;
         }
 
         public string CheckParameters(TreeNode currentTreeNode,TextBox textBoxParameters, Label lblParameters)
