@@ -150,7 +150,8 @@ namespace TestRunner
             {
                 MethodTree.TryGetValue(this.currentNode, out methodInfo);
             }
-           
+
+            
             RunTest(methodInfo);
             
             OutputMessage.Instance.CommitMessage(outputText);
@@ -319,6 +320,11 @@ namespace TestRunner
             }
             return parameterMessage.ToString();
         }
+        /// <summary>
+        /// This will actuall invoke the method
+        /// </summary>
+        /// <param name="methodInfo"></param>
+        /// <param name="textBoxParameters"></param>
         private void RunMethod(MethodInfo methodInfo, TextBox textBoxParameters)
         {
             
@@ -357,7 +363,7 @@ namespace TestRunner
                     }
                     else
                     {
-                        arguments[i] = GetDefaultValue(parameterInfo[i].ParameterType);
+                        arguments[i] = GetParametersDefaultValue(parameterInfo[i].ParameterType);
                     }
                 }
                             
@@ -376,14 +382,22 @@ namespace TestRunner
             message.AppendLine();
 
             OutputMessage.Instance.WriteMessage(message.ToString());
-
+            OutputMessage.Instance.CommitMessage(outputText);
 
         }
 
-        private object GetDefaultValue(Type t)
+        private object GetParametersDefaultValue(Type t)
         {
             if (t.IsValueType)
-                return Activator.CreateInstance(t);
+            {
+                object obj=Activator.CreateInstance(t);
+                if(Convert.ToInt32(obj) == 0)
+                {
+                    obj = 1;
+                }
+                return obj;
+            }
+                
 
             return null;
         }

@@ -45,6 +45,7 @@ namespace TestRunner
             btn_Run.Enabled = true;
             currentTreeNode = treeViewEventArgs.Node;
             methodHandler.currentNode = currentTreeNode;
+            OutputMessage.Instance.ResetMessage(txtBoxOutput);
             methodHandler.CheckParameters(currentTreeNode, textBoxParameters, lblParameters);
             
         }    
