@@ -49,6 +49,7 @@ namespace TestRunner
             this.btnRunAllTests = new System.Windows.Forms.Button();
             this.progressBarTests = new TestRunner.CustomProgressBar();
             this.txtBoxOutput = new System.Windows.Forms.RichTextBox();
+            this.btnStopTests = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -182,7 +183,7 @@ namespace TestRunner
             // btnRunAllTests
             // 
             this.btnRunAllTests.Enabled = false;
-            this.btnRunAllTests.Location = new System.Drawing.Point(670, 86);
+            this.btnRunAllTests.Location = new System.Drawing.Point(684, 86);
             this.btnRunAllTests.Name = "btnRunAllTests";
             this.btnRunAllTests.Size = new System.Drawing.Size(152, 44);
             this.btnRunAllTests.TabIndex = 12;
@@ -211,12 +212,24 @@ namespace TestRunner
             this.txtBoxOutput.Text = "";
             this.txtBoxOutput.WordWrap = false;
             // 
+            // btnStopTests
+            // 
+            this.btnStopTests.Enabled = false;
+            this.btnStopTests.Location = new System.Drawing.Point(857, 86);
+            this.btnStopTests.Name = "btnStopTests";
+            this.btnStopTests.Size = new System.Drawing.Size(152, 44);
+            this.btnStopTests.TabIndex = 14;
+            this.btnStopTests.Text = "Stop";
+            this.btnStopTests.UseVisualStyleBackColor = true;
+            this.btnStopTests.Click += new System.EventHandler(this.btnStopTests_Click);
+            // 
             // TestRunnerForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1806, 795);
             this.ControlBox = false;
+            this.Controls.Add(this.btnStopTests);
             this.Controls.Add(this.txtBoxOutput);
             this.Controls.Add(this.btnRunAllTests);
             this.Controls.Add(this.lblTestClass);
@@ -261,6 +274,7 @@ namespace TestRunner
         private System.Windows.Forms.Label lblTestClass;
         private System.Windows.Forms.Button btnRunAllTests;
         private System.Windows.Forms.RichTextBox txtBoxOutput;
+        private System.Windows.Forms.Button btnStopTests;
     }
 }
 

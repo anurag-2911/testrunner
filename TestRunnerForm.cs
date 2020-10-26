@@ -4,6 +4,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Security;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace TestRunner
@@ -15,15 +17,21 @@ namespace TestRunner
         AssemblyLoader assemblyLoader;
         TestClassHandler testClass;
         TestMethodHandler methodHandler;
-        TreeNode currentTreeNode;         
-                
+        TreeNode currentTreeNode;
+        CancellationTokenSource cancellationTokenSource_buttonRunMethod;
+        CancellationToken runbuttonTask;
+        CancellationTokenSource cancellationTokenSource_buttonRunAllMethod;
+        CancellationToken runAllbuttonTask;
+
         public TestRunnerForm()
         {
             InitializeComponent();
             assemblyLoader = new AssemblyLoader();
             testClass = new TestClassHandler();
+           
             
         }
+
         private void attachToolStripMenuItem1_Click(object sender, EventArgs e)
         {
             AttachDll();
@@ -54,18 +62,51 @@ namespace TestRunner
         private void btn_Run_Click(object sender, EventArgs e)
         {
             SwitchButtonState(btnRunAllTests, false);
+            SwitchButtonState(btnStopTests, true);
+            cancellationTokenSource_buttonRunMethod = new CancellationTokenSource();
             
-            methodHandler.RunButtonClicked(sender, e);
+            runbuttonTask = cancellationTokenSource_buttonRunMethod.Token;
+            try
+            {
+                Task runmethodThread = Task.Factory.StartNew(() =>
+                  {
+                      methodHandler.RunButtonClicked(sender, e);
+                  }, runbuttonTask);
+
+                
+            }
+            catch(Exception ex)
+            {
+
+            }
             
-            SwitchButtonState(btnRunAllTests, true);
+
+            //runmethodThread.Wait();
+            //SwitchButtonState(btnStopTests, false);
+            //SwitchButtonState(btnRunAllTests, true);
             
         }
 
         private void btnRunAllTests_Click(object sender, EventArgs e)
         {
             SwitchButtonState(btn_Run, false);
-            methodHandler.RunAllTestsButtonClicked(sender, e);
-            SwitchButtonState(btn_Run, true);
+            SwitchButtonState(btnStopTests, true);
+            cancellationTokenSource_buttonRunAllMethod = new CancellationTokenSource();
+            runAllbuttonTask = cancellationTokenSource_buttonRunAllMethod.Token;
+            try
+            {
+                Task runallmethodsThread = Task.Factory.StartNew(() =>
+                 {
+                     methodHandler.RunAllTestsButtonClicked(sender, e);
+                 },runAllbuttonTask);
+                //SwitchButtonState(btnStopTests, false);
+            }
+            catch(Exception ex)
+            {
+
+            }
+            //runallmethodsThread.Wait();
+            //SwitchButtonState(btn_Run, true);
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
@@ -179,6 +220,21 @@ namespace TestRunner
             button.Enabled = value;
         }
 
+        private void btnStopTests_Click(object sender, EventArgs e)
+        {
+            //todo: find a better way
+            if (cancellationTokenSource_buttonRunMethod != null)
+            {
+                cancellationTokenSource_buttonRunMethod.Cancel();
+                
+            }
+            if (cancellationTokenSource_buttonRunAllMethod != null)
+            {
+                cancellationTokenSource_buttonRunAllMethod.Cancel();
+            }
 
+            MessageBox.Show("Test execution stopped");
+            
+        }
     }
 }

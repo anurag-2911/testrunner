@@ -28,14 +28,28 @@ namespace TestRunner
                 string readMessageOutput = File.ReadAllText(testResultFilePath);
                 outMessage.AppendLine(readMessageOutput);
             }
-
-            textBox.Text = outMessage.ToString();
+            WriteTextSafe(textBox, outMessage.ToString());
+            
         }
 
         public void ResetMessage(RichTextBox textBox)
         {
-            textBox.Text = string.Empty;
+            WriteTextSafe(textBox, string.Empty);
+            
             outMessage.Clear();
+        }
+        private delegate void SafeCallDelegate(RichTextBox textBox,string text);
+        private void WriteTextSafe(RichTextBox textbox,string text)
+        {
+            if (textbox.InvokeRequired)
+            {
+                var d = new SafeCallDelegate(WriteTextSafe);
+                textbox.Invoke(d, new object[] { textbox,text });
+            }
+            else
+            {
+                textbox.Text = text;
+            }
         }
     }
 }
