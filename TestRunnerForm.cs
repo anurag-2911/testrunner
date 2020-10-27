@@ -81,9 +81,7 @@ namespace TestRunner
             }
             
 
-            //runmethodThread.Wait();
-            //SwitchButtonState(btnStopTests, false);
-            //SwitchButtonState(btnRunAllTests, true);
+            SwitchButtonState(btnRunAllTests, true);
             
         }
 
@@ -105,8 +103,8 @@ namespace TestRunner
             {
 
             }
-            //runallmethodsThread.Wait();
-            //SwitchButtonState(btn_Run, true);
+            
+            SwitchButtonState(btn_Run, true);
         }
 
         private void exitToolStripMenuItem_Click(object sender, EventArgs e)
