@@ -57,7 +57,6 @@ namespace TestRunner
             methodHandler.CheckParameters(currentTreeNode, textBoxParameters, lblParameters);
             
         }    
-               
       
         private void btn_Run_Click(object sender, EventArgs e)
         {
@@ -73,7 +72,7 @@ namespace TestRunner
                       methodHandler.RunButtonClicked(sender, e);
                   }, runbuttonTask);
 
-                
+                runmethodThread.ContinueWith(RunMethodCompleted);
             }
             catch(Exception ex)
             {
@@ -81,9 +80,14 @@ namespace TestRunner
             }
             
 
-            SwitchButtonState(btnRunAllTests, true);
-            
         }
+
+        private void RunMethodCompleted(Task obj)
+        {
+            SwitchButtonState(btnStopTests, false);
+            SwitchButtonState(btnRunAllTests, true);
+        }
+
 
         private void btnRunAllTests_Click(object sender, EventArgs e)
         {
@@ -97,13 +101,18 @@ namespace TestRunner
                  {
                      methodHandler.RunAllTestsButtonClicked(sender, e);
                  },runAllbuttonTask);
-                //SwitchButtonState(btnStopTests, false);
+                runallmethodsThread.ContinueWith(RunAllMethodCompleted);
             }
             catch(Exception ex)
             {
 
             }
             
+        }
+
+        private void RunAllMethodCompleted(Task obj)
+        {
+            SwitchButtonState(btnStopTests, false);
             SwitchButtonState(btn_Run, true);
         }
 
@@ -212,12 +221,20 @@ namespace TestRunner
                 dropdownTestClass.Items.AddRange(testClass.GetTestClasses.Keys.ToArray());
             }
         }
-
+        private delegate void SafeCallDelegate(Button stopButton, bool value);
         private void SwitchButtonState(Button button, bool value)
         {
-            button.Enabled = value;
+            if (button.InvokeRequired)
+            {
+                var d = new SafeCallDelegate(SwitchButtonState);
+                button.Invoke(d, new object[] { button, value });
+            }
+            else
+            {
+                button.Enabled = value;
+            }
         }
-
+       
         private void btnStopTests_Click(object sender, EventArgs e)
         {
             //todo: find a better way

@@ -18,6 +18,7 @@ namespace TestRunner
             howToUseMessage.AppendLine("2. All dependent dll which test dll needs should be in same folder as test dll");
             howToUseMessage.AppendLine("3. Select test class");
             howToUseMessage.AppendLine("4. Run test(s)");
+            howToUseMessage.AppendLine("5. Select Stop test to stop execution of test(s)");
 
             return howToUseMessage.ToString();
         }
