@@ -8,7 +8,7 @@ namespace TestRunner
     public class OutputMessage
     {
         StringBuilder outMessage = new StringBuilder();
-
+        private RichTextBox textBox;
         readonly string testResultFilePath = Environment.CurrentDirectory + "\\TestResult.txt";
 
         public static OutputMessage Instance { get; } = new OutputMessage();
@@ -16,12 +16,17 @@ namespace TestRunner
         {
 
         }
+
+        public void SetTextBox(RichTextBox richTextBox)
+        {
+            this.textBox = richTextBox;
+        }
         public void WriteMessage(string message)
         {
             outMessage.AppendLine(message);
         }
 
-        public void CommitMessage(RichTextBox textBox)
+        public void CommitMessage()
         {
             if (File.Exists(testResultFilePath))
             {
@@ -32,7 +37,7 @@ namespace TestRunner
             
         }
 
-        public void ResetMessage(RichTextBox textBox)
+        public void ResetMessage()
         {
             WriteTextSafe(textBox, string.Empty);
             

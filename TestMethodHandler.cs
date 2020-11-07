@@ -45,7 +45,7 @@ namespace TestRunner
         }
         public void RunAllTestsButtonClicked(object sender,EventArgs e)
         {           
-            OutputMessage.Instance.ResetMessage(outputText);
+            OutputMessage.Instance.ResetMessage();
             
             if (reflectedObject == null)
             {
@@ -66,7 +66,7 @@ namespace TestRunner
             }
             FixtureTearDown(reflectedObject);
 
-            OutputMessage.Instance.CommitMessage(outputText);
+            OutputMessage.Instance.CommitMessage();
         }
         public void RunButtonClicked(object sender, EventArgs e)
         {
@@ -87,7 +87,7 @@ namespace TestRunner
                 return;
             }
 
-            OutputMessage.Instance.ResetMessage(outputText);
+            OutputMessage.Instance.ResetMessage();
 
             FixtureSetup(reflectedObject);
             
@@ -154,7 +154,7 @@ namespace TestRunner
             
             RunTest(methodInfo);
             
-            OutputMessage.Instance.CommitMessage(outputText);
+            OutputMessage.Instance.CommitMessage();
         }
        
 
@@ -382,7 +382,7 @@ namespace TestRunner
             message.AppendLine();
 
             OutputMessage.Instance.WriteMessage(message.ToString());
-            OutputMessage.Instance.CommitMessage(outputText);
+            OutputMessage.Instance.CommitMessage();
 
         }
 

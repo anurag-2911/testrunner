@@ -28,7 +28,7 @@ namespace TestRunner
             InitializeComponent();
             assemblyLoader = new AssemblyLoader();
             testClass = new TestClassHandler();
-           
+            OutputMessage.Instance.SetTextBox(txtBoxOutput);
             
         }
 
@@ -53,7 +53,7 @@ namespace TestRunner
             btn_Run.Enabled = true;
             currentTreeNode = treeViewEventArgs.Node;
             methodHandler.currentNode = currentTreeNode;
-            OutputMessage.Instance.ResetMessage(txtBoxOutput);
+            OutputMessage.Instance.ResetMessage();
             methodHandler.CheckParameters(currentTreeNode, textBoxParameters, lblParameters);
             
         }    
