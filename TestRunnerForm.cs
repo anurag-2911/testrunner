@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security;
@@ -22,6 +23,9 @@ namespace TestRunner
         CancellationToken runbuttonTask;
         CancellationTokenSource cancellationTokenSource_buttonRunAllMethod;
         CancellationToken runAllbuttonTask;
+        readonly string traceoutput = Environment.CurrentDirectory + "\\traceOutput.txt";
+        TextWriterTraceListener textWriterTraceListener; 
+        
 
         public TestRunnerForm()
         {
@@ -60,26 +64,53 @@ namespace TestRunner
       
         private void btn_Run_Click(object sender, EventArgs e)
         {
+            StartTraceListener();
+            
             SwitchButtonState(btnRunAllTests, false);
             SwitchButtonState(btnStopTests, true);
-            cancellationTokenSource_buttonRunMethod = new CancellationTokenSource();
             
+            cancellationTokenSource_buttonRunMethod = new CancellationTokenSource();
+
             runbuttonTask = cancellationTokenSource_buttonRunMethod.Token;
             try
             {
                 Task runmethodThread = Task.Factory.StartNew(() =>
-                  {
-                      methodHandler.RunButtonClicked(sender, e);
-                  }, runbuttonTask);
+                {
+                    methodHandler.RunButtonClicked(sender, e);
+                }, runbuttonTask);
 
                 runmethodThread.ContinueWith(RunMethodCompleted);
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
 
             }
-            
 
+            EndTraceListener();
+        }
+
+        private static void EndTraceListener()
+        {
+            try
+            {
+                Trace.Flush();
+            }
+            catch { }
+        }
+
+        private void StartTraceListener()
+        {
+            try
+            {
+                if(File.Exists(traceoutput))
+                {
+                    File.Delete(traceoutput);
+                }
+                Thread.Sleep(10);
+                textWriterTraceListener = new TextWriterTraceListener(traceoutput);
+                Trace.Listeners.Add(textWriterTraceListener);
+            }
+            catch { }
         }
 
         private void RunMethodCompleted(Task obj)
@@ -91,6 +122,7 @@ namespace TestRunner
 
         private void btnRunAllTests_Click(object sender, EventArgs e)
         {
+            StartTraceListener();
             SwitchButtonState(btn_Run, false);
             SwitchButtonState(btnStopTests, true);
             cancellationTokenSource_buttonRunAllMethod = new CancellationTokenSource();
@@ -107,7 +139,7 @@ namespace TestRunner
             {
 
             }
-            
+            EndTraceListener();
         }
 
         private void RunAllMethodCompleted(Task obj)

@@ -421,6 +421,11 @@ namespace TestRunner
                         lblParameters.Width = parameters.Length + 10;
                         lblParameters.Text = message;
                     }
+                    else
+                    {
+                        textBoxParameters.Visible = false;
+                        lblParameters.Visible = false;
+                    }
                 }
                 catch (Exception)
                 {
